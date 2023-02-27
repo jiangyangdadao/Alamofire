@@ -96,7 +96,7 @@ extension SessionDelegate: URLSessionTaskDelegate {
             evaluation = attemptCredentialAuthentication(for: challenge, belongingTo: task)
         #if !(os(Linux) || os(Windows))
         case NSURLAuthenticationMethodServerTrust:
-            evaluation = attemptServerTrustAuthentication(with: challenge)
+            evaluation = attemptServerTrustAuthentication(with: challenge, belongingTo: task)
         case NSURLAuthenticationMethodClientCertificate:
             evaluation = attemptCredentialAuthentication(for: challenge, belongingTo: task)
         #endif
@@ -117,9 +117,11 @@ extension SessionDelegate: URLSessionTaskDelegate {
     /// - Parameter challenge: The `URLAuthenticationChallenge`.
     ///
     /// - Returns:             The `ChallengeEvaluation`.
-    func attemptServerTrustAuthentication(with challenge: URLAuthenticationChallenge) -> ChallengeEvaluation {
-        let host = challenge.protectionSpace.host
-
+    func attemptServerTrustAuthentication(with challenge: URLAuthenticationChallenge,
+                                          belongingTo task: URLSessionTask) -> ChallengeEvaluation {
+        var host = challenge.protectionSpace.host
+        if let originalHost = task.originalRequest?.allHTTPHeaderFields?["Host"] as? String { host = originalHost }
+        
         guard challenge.protectionSpace.authenticationMethod == NSURLAuthenticationMethodServerTrust,
               let trust = challenge.protectionSpace.serverTrust
         else {
